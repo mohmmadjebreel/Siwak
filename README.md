@@ -97,7 +97,7 @@ TWILIO_FROM=SIWAK          # أو رقم هاتف، أو استخدم TWILIO_MES
 |---|---|
 | `tap` — [Tap Payments](https://www.tap.company) | الأردن ودول الخليج (تأكد من دعمه لحساب العيادة في فلسطين) |
 | `stripe` — [Stripe Checkout](https://stripe.com) | إذا كان حساب العيادة في دولة يدعمها Stripe |
-| `mock` | للتطوير فقط (يُرفض تشغيله في الإنتاج) |
+| `mock` | للتطوير والعرض فقط (في الإنتاج يحتاج `ALLOW_MOCK_PAYMENT=true` صراحةً) |
 
 **Tap:**
 ```env
@@ -121,6 +121,23 @@ STRIPE_WEBHOOK_SECRET=whsec_xxx
 - إذا وصل الدفع متأخراً وكان الموعد قد حُجز لشخص آخر، يُعلَّم الحجز "دفع بحاجة لمراجعة" في لوحة التحكم ويُبلَّغ المريض أن العيادة ستتواصل معه.
 
 ---
+
+## التنصيب على سيرفر بأمر واحد
+
+على سيرفر Ubuntu/Debian، ادخل كـ root ونفّذ:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/mohmmadjebreel/Siwak/claude/sawak-dental-clinic-site-74rk5q/deploy/install.sh | DOMAIN=siwak.barqradius.com bash
+```
+
+السكربت [`deploy/install.sh`](deploy/install.sh):
+- ينزّل نسخة Node.js 22 خاصة في `/opt` (لا يلمس أي Node موجود على السيرفر).
+- ينزّل الكود إلى `/opt/siwak`، وينشئ `.env` بكلمات سر عشوائية (كلمة سر لوحة التحكم تُحفظ في `/root/siwak-admin-password.txt`).
+- يشغّل الموقع كخدمة systemd باسم `siwak` على المنفذ 3010.
+- يضيف إعداد nginx (أو Apache إن كان هو الموجود) للدومين، ثم شهادة SSL مجانية من Let's Encrypt إذا كان الدومين يشير للسيرفر.
+- إعادة تشغيله لاحقاً = تحديث الكود مع الحفاظ على الإعدادات وقاعدة البيانات.
+
+قبل ذلك أضف سجل DNS من نوع **A**: `siwak` ← عنوان IP للسيرفر.
 
 ## النشر (Production)
 

@@ -40,7 +40,7 @@ export function adminRoutes({ db, config, sms, allow }) {
     const token = signToken(config.sessionSecret, { role: 'admin' }, SESSION_TTL);
     res.setHeader(
       'Set-Cookie',
-      `${COOKIE}=${token}; HttpOnly; SameSite=Strict; Path=/; Max-Age=${SESSION_TTL}${config.isProduction ? '; Secure' : ''}`,
+      `${COOKIE}=${token}; HttpOnly; SameSite=Strict; Path=/; Max-Age=${SESSION_TTL}${req.secure ? '; Secure' : ''}`,
     );
     res.json({ ok: true });
   });

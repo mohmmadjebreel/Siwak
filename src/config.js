@@ -59,7 +59,10 @@ export function loadConfig(overrides = {}) {
 
   if (config.isProduction) {
     if (config.payment.provider === 'mock') {
-      throw new Error('PAYMENT_PROVIDER=mock is not allowed in production. Use stripe or tap.');
+      if (env.ALLOW_MOCK_PAYMENT !== 'true') {
+        throw new Error('PAYMENT_PROVIDER=mock is not allowed in production. Use stripe or tap (or set ALLOW_MOCK_PAYMENT=true for a demo).');
+      }
+      console.warn('[siwak] WARNING: demo payments enabled in production — no real deposits are collected.');
     }
     if (config.sms.provider === 'console') {
       console.warn('[siwak] WARNING: SMS_PROVIDER=console in production — patients will not receive SMS.');
