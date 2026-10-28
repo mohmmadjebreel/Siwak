@@ -152,7 +152,9 @@ mkdir -p "$ACME_DIR"
 
 log "Configuring $WEB for $DOMAIN"
 if [ "$WEB" = nginx ]; then
-  if [ -d /etc/nginx/sites-available ]; then
+  if [ -f /etc/nginx/conf.d/siwak.conf ]; then
+    CONF=/etc/nginx/conf.d/siwak.conf
+  elif [ -d /etc/nginx/sites-available ]; then
     CONF=/etc/nginx/sites-available/siwak.conf
   else
     CONF=/etc/nginx/conf.d/siwak.conf
@@ -191,9 +193,25 @@ server {
 }
 EOF
   fi
-  [ -d /etc/nginx/sites-enabled ] && ln -sf "$CONF" /etc/nginx/sites-enabled/siwak.conf
+  [[ "$CONF" == */sites-available/* ]] && ln -sf "$CONF" /etc/nginx/sites-enabled/siwak.conf
   nginx -t
   systemctl reload nginx
+  nginx_loads_site() { grep -qF "server_name $DOMAIN;" <<<"$(nginx -T 2>/dev/null)"; }
+  # Custom nginx.conf files (control panels, other apps) often skip sites-enabled; fall back to conf.d.
+  if ! nginx_loads_site && [[ "$CONF" == */sites-available/* ]]; then
+    warn "nginx does not read sites-enabled on this server; moving the site to /etc/nginx/conf.d"
+    rm -f /etc/nginx/sites-enabled/siwak.conf
+    mkdir -p /etc/nginx/conf.d
+    mv "$CONF" /etc/nginx/conf.d/siwak.conf
+    CONF=/etc/nginx/conf.d/siwak.conf
+    nginx -t
+    systemctl reload nginx
+  fi
+  if ! nginx_loads_site; then
+    warn "nginx still does not load $CONF."
+    warn "Add this line inside the http { } block of /etc/nginx/nginx.conf, then re-run: include $CONF;"
+    exit 1
+  fi
 else
   a2enmod -q proxy proxy_http headers remoteip alias >/dev/null
   CF_CONF=/etc/apache2/siwak-cloudflare.conf
@@ -242,8 +260,25 @@ DOMAIN_IP="$(getent ahostsv4 "$DOMAIN" | awk 'NR==1{print $1}' || true)"
 BEHIND_CF=false
 [ -n "$DOMAIN_IP" ] && [ -n "${CF_IPS// /}" ] && is_cloudflare_ip "$DOMAIN_IP" && BEHIND_CF=true
 
+# Make sure port 80 on this machine really serves the challenge folder for this domain.
+CHECK_DIR="$ACME_DIR/.well-known/acme-challenge"
+mkdir -p "$CHECK_DIR"
+CHECK_TOKEN="$(openssl rand -hex 8)"
+echo "$CHECK_TOKEN" > "$CHECK_DIR/siwak-check"
+CHECK_GOT="$(curl -fsS -m 5 -H "Host: $DOMAIN" http://127.0.0.1/.well-known/acme-challenge/siwak-check 2>/dev/null || true)"
+rm -f "$CHECK_DIR/siwak-check"
+LOCAL_OK=true
+if [ "$CHECK_GOT" != "$CHECK_TOKEN" ]; then
+  LOCAL_OK=false
+  warn "Port 80 on this server does not route $DOMAIN to $WEB as expected. Listening on port 80:"
+  ss -ltnp 'sport = :80' || true
+fi
+
+echo "DNS: $DOMAIN -> ${DOMAIN_IP:-nothing}$([ "$BEHIND_CF" = true ] && echo ' (Cloudflare proxy)')"
 URL="http://$DOMAIN"
-if [ -z "$DOMAIN_IP" ]; then
+if [ "$LOCAL_OK" = false ]; then
+  warn "Skipping SSL until port 80 serves this site."
+elif [ -z "$DOMAIN_IP" ]; then
   warn "$DOMAIN has no DNS record yet. Add an A record: $DOMAIN -> this server's IP, then re-run this script."
 elif [ "$BEHIND_CF" = false ] && ! grep -qw "$DOMAIN_IP" <<<"$SERVER_IPS"; then
   warn "$DOMAIN points to $DOMAIN_IP, not to this server. Fix the DNS record, then re-run this script."
@@ -270,7 +305,8 @@ else
   else
     warn "Could not get an SSL certificate."
     if [ "$BEHIND_CF" = true ]; then
-      warn "Set the Cloudflare record to 'DNS only' (grey cloud), re-run this script, then switch it back to 'Proxied'."
+      warn "The domain still goes through Cloudflare's proxy. Set the record to 'DNS only' (grey cloud),"
+      warn "wait ~5 minutes until 'getent ahostsv4 $DOMAIN' shows this server's IP, then re-run this script."
     fi
   fi
 fi
