@@ -131,18 +131,28 @@ sleep 2
 curl -fsS "http://127.0.0.1:$PORT/healthz" >/dev/null || { journalctl -u siwak -n 30 --no-pager; echo "Service failed to start"; exit 1; }
 
 # ---- Reverse proxy ----
-WEB=""
-if command -v nginx >/dev/null; then
-  WEB=nginx
-elif systemctl is-active --quiet apache2 2>/dev/null; then
-  WEB=apache
-elif ss -ltnH 'sport = :80' | grep -q .; then
-  warn "Something other than nginx/Apache is listening on port 80:"; ss -ltnp 'sport = :80'
-  echo "Point it at http://127.0.0.1:$PORT for $DOMAIN manually."; exit 1
-else
-  apt-get install -y -qq nginx >/dev/null
-  WEB=nginx
-fi
+# Use whatever already owns port 80; never fight another web server for it.
+PORT80_OWNER="$(ss -ltnpH 'sport = :80' | grep -o 'users:(("[^"]*' | head -1 | sed 's/.*"//' || true)"
+case "$PORT80_OWNER" in
+  nginx) WEB=nginx ;;
+  apache2 | httpd) WEB=apache ;;
+  "")
+    command -v nginx >/dev/null || apt-get install -y -qq nginx >/dev/null
+    systemctl enable --quiet --now nginx
+    WEB=nginx
+    ;;
+  *)
+    HOST_IP="$(ip -4 addr show docker0 2>/dev/null | grep -o 'inet [0-9.]*' | cut -d' ' -f2 || true)"
+    log "Done (app installed; web server not configured)"
+    warn "Port 80 belongs to '$PORT80_OWNER' (e.g. a Docker reverse proxy), so nginx/SSL were not touched."
+    echo "Add a proxy host in that web server:  $DOMAIN  ->  http://${HOST_IP:-<this server IP>}:$PORT"
+    echo "and let it issue the SSL certificate. The app is running: curl http://127.0.0.1:$PORT/healthz"
+    if [ -f /root/siwak-admin-password.txt ]; then
+      echo "Admin pass:  $(cat /root/siwak-admin-password.txt)"
+    fi
+    exit 0
+    ;;
+esac
 
 # Cloudflare sends the visitor's IP in CF-Connecting-IP; trust it only from Cloudflare's own ranges
 # so per-IP rate limits apply to real visitors, not to Cloudflare edge servers.
