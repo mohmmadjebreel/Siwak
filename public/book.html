@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>احجز موعدك — سواك</title>
   <meta name="description" content="احجز موعدك في عيادة سواك لطب الأسنان أونلاين.">
-  <meta name="theme-color" content="#0f5c4d">
+  <meta name="theme-color" content="#1a5fc0">
   <link rel="icon" href="/img/logo.svg" type="image/svg+xml">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -32,7 +32,7 @@
 
     <ol class="stepper" id="stepper">
       <li data-n="1" data-step="1"><span>الخدمة</span></li>
-      <li data-n="2" data-step="2"><span>الموعد</span></li>
+      <li data-n="2" data-step="2"><span>اليوم والوقت</span></li>
       <li data-n="3" data-step="3"><span>بياناتك</span></li>
       <li data-n="4" data-step="4"><span>الدفع</span></li>
     </ol>
@@ -50,16 +50,20 @@
 
         <!-- Step 2: doctor, date, time -->
         <section class="panel hidden" data-panel="2">
-          <h2>اختر الطبيب والموعد</h2>
+          <h2>اختر الطبيب واليوم والوقت</h2>
           <div class="field">
             <label>الطبيب</label>
             <div class="chips" id="doctor-list"></div>
           </div>
           <div class="field">
-            <label>اليوم</label>
+            <label><span class="label-ic" data-icon="calendar"></span> اليوم</label>
             <div class="date-strip" id="date-list"></div>
           </div>
-          <div id="slot-area"></div>
+          <div class="field">
+            <label><span class="label-ic" data-icon="clock"></span> الوقت</label>
+            <div id="slot-area"></div>
+            <span class="hint" id="time-hint">اختر وقت الموعد للمتابعة.</span>
+          </div>
           <div class="alert alert-error hidden" id="err-2" role="alert"></div>
           <div class="step-actions">
             <button class="btn btn-ghost" type="button" data-back="1"><span data-icon="arrowBack"></span> رجوع</button>
@@ -78,10 +82,10 @@
           <div class="field">
             <label for="phone">رقم الجوال</label>
             <div class="otp-box">
-              <input class="input" id="phone" type="tel" inputmode="tel" autocomplete="tel" dir="ltr" placeholder="07X XXX XXXX">
+              <input class="input" id="phone" type="tel" inputmode="tel" autocomplete="tel" dir="ltr" placeholder="059X XXX XXX">
               <button class="btn btn-ghost" type="button" id="send-otp">أرسل رمز التحقق</button>
             </div>
-            <span class="hint">سنرسل رمزاً من 6 أرقام للتأكد من رقمك، ثم نرسل تأكيد الحجز على نفس الرقم.</span>
+            <span class="hint">رقم جوال فلسطيني (جوال 059 أو أوريدو 056)، مثال: 0597736062. سنرسل رمز تحقق من 6 أرقام، ثم تأكيد الحجز على نفس الرقم.</span>
           </div>
 
           <div class="field hidden" id="otp-field">

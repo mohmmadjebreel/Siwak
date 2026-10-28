@@ -76,6 +76,7 @@ function selectService(id) {
   renderSlots();
   renderSummary();
   goTo(2);
+  if (!state.date) autoPickDate();
 }
 
 // ---------- Step 2 ----------
@@ -114,10 +115,47 @@ function renderDates() {
     .join('');
 }
 
+function fetchSlots(date) {
+  const params = new URLSearchParams({ serviceId: state.serviceId, doctorId: state.doctorId, date });
+  return api(`/api/slots?${params}`).then((r) => r.slots);
+}
+
+// Open the nearest day that still has free times, so the time choices are visible right away.
+let autoPickRun = 0;
+async function autoPickDate() {
+  const run = ++autoPickRun;
+  const candidates = state.clinic.dates.filter(dateIsOpen).slice(0, 10);
+  for (const entry of candidates) {
+    let slots;
+    try {
+      slots = await fetchSlots(entry.date);
+    } catch {
+      return;
+    }
+    // Stop if the patient picked a day themselves or changed service/doctor meanwhile.
+    if (run !== autoPickRun || state.date) return;
+    if (slots.length) {
+      state.date = entry.date;
+      renderDates();
+      document.querySelector(`[data-date="${entry.date}"]`)?.scrollIntoView({ block: 'nearest', inline: 'center' });
+      renderSlots();
+      renderSummary();
+      return;
+    }
+  }
+}
+
+function updateTimeState() {
+  $('to-3').disabled = !state.time;
+  $('time-hint').textContent = state.time
+    ? `الوقت المختار: ${timeLabel(state.time)} — ${dateLabel(state.date)}`
+    : 'اختر وقت الموعد للمتابعة.';
+}
+
 let slotsRequest = 0;
 async function renderSlots() {
   const area = $('slot-area');
-  $('to-3').disabled = !state.time;
+  updateTimeState();
   if (!state.date) {
     area.innerHTML = '<div class="empty">اختر اليوم لعرض الأوقات المتاحة</div>';
     return;
@@ -125,8 +163,7 @@ async function renderSlots() {
   const req = ++slotsRequest;
   area.innerHTML = '<div class="loading"><span class="spinner"></span> جارٍ البحث عن الأوقات المتاحة…</div>';
   try {
-    const params = new URLSearchParams({ serviceId: state.serviceId, doctorId: state.doctorId, date: state.date });
-    const { slots } = await api(`/api/slots?${params}`);
+    const slots = await fetchSlots(state.date);
     if (req !== slotsRequest) return;
     if (state.time && !slots.includes(state.time)) state.time = null;
     if (!slots.length) {
@@ -145,7 +182,7 @@ async function renderSlots() {
   } catch (err) {
     if (req === slotsRequest) area.innerHTML = `<div class="empty">${esc(err.message)}</div>`;
   }
-  $('to-3').disabled = !state.time;
+  updateTimeState();
   renderSummary();
 }
 
@@ -280,6 +317,7 @@ function bind() {
     renderDates();
     renderSlots();
     renderSummary();
+    if (!state.date) autoPickDate();
   });
   $('date-list').addEventListener('click', (e) => {
     const btn = e.target.closest('[data-date]');
@@ -295,7 +333,7 @@ function bind() {
     if (!btn) return;
     state.time = btn.dataset.time;
     document.querySelectorAll('#slot-area .slot').forEach((b) => b.setAttribute('aria-pressed', String(b === btn)));
-    $('to-3').disabled = false;
+    updateTimeState();
     showError(2, '');
     renderSummary();
   });

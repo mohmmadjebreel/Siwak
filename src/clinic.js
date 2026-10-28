@@ -5,11 +5,11 @@ export const clinic = {
   name: 'سواك',
   fullName: 'عيادة سواك لطب وتجميل الأسنان',
   tagline: 'ابتسامة صحية تبدأ من موعد واحد',
-  phone: '+962 7 9000 0000',
-  whatsapp: '962790000000',
+  phone: '+970 59 000 0000',
+  whatsapp: '970590000000',
   email: 'info@siwak.clinic',
-  address: 'عمّان — شارع المدينة المنورة، مجمع الصحة، الطابق الثاني',
-  mapUrl: 'https://maps.google.com/?q=Amman',
+  address: 'رام الله — شارع الإرسال، مجمع الصحة، الطابق الثاني',
+  mapUrl: 'https://maps.google.com/?q=Ramallah',
 
   // طول الخانة الزمنية بالدقائق
   slotMinutes: 30,
@@ -31,15 +31,15 @@ export const clinic = {
     6: [['10:00', '17:00']],
   },
 
-  // المبالغ بالعملة الأساسية (مثلاً دينار). العربون يُخصم من قيمة الجلسة.
+  // المبالغ بالعملة المحددة في CURRENCY (افتراضياً شيكل). العربون يُخصم من قيمة الجلسة.
   services: [
     {
       id: 'checkup',
       name: 'فحص واستشارة',
       description: 'فحص شامل للفم والأسنان مع صورة بانوراما وخطة علاج واضحة.',
       durationMin: 30,
-      priceFrom: 15,
-      deposit: 5,
+      priceFrom: 50,
+      deposit: 20,
       icon: 'search',
     },
     {
@@ -47,8 +47,8 @@ export const clinic = {
       name: 'تنظيف وتلميع',
       description: 'إزالة الجير والتصبغات وتلميع الأسنان بأجهزة الموجات فوق الصوتية.',
       durationMin: 30,
-      priceFrom: 25,
-      deposit: 5,
+      priceFrom: 100,
+      deposit: 20,
       icon: 'sparkle',
     },
     {
@@ -56,8 +56,8 @@ export const clinic = {
       name: 'حشوات تجميلية',
       description: 'حشوات بلون السن الطبيعي تعيد للسن شكله وقوته.',
       durationMin: 60,
-      priceFrom: 30,
-      deposit: 10,
+      priceFrom: 150,
+      deposit: 50,
       icon: 'tooth',
     },
     {
@@ -65,8 +65,8 @@ export const clinic = {
       name: 'علاج العصب',
       description: 'علاج قنوات الجذر بأحدث الأجهزة الدوّارة وبأقل ألم ممكن.',
       durationMin: 90,
-      priceFrom: 80,
-      deposit: 15,
+      priceFrom: 400,
+      deposit: 100,
       icon: 'shield',
     },
     {
@@ -74,8 +74,8 @@ export const clinic = {
       name: 'تبييض الأسنان',
       description: 'تبييض آمن داخل العيادة بنتيجة تظهر من الجلسة الأولى.',
       durationMin: 60,
-      priceFrom: 120,
-      deposit: 20,
+      priceFrom: 500,
+      deposit: 100,
       icon: 'sun',
     },
     {
@@ -83,8 +83,8 @@ export const clinic = {
       name: 'تقويم الأسنان',
       description: 'تقويم معدني، خزفي أو شفاف حسب حالتك واحتياجك.',
       durationMin: 60,
-      priceFrom: 600,
-      deposit: 20,
+      priceFrom: 2500,
+      deposit: 200,
       icon: 'align',
     },
     {
@@ -92,8 +92,8 @@ export const clinic = {
       name: 'زراعة الأسنان',
       description: 'تعويض الأسنان المفقودة بزرعات ثابتة تدوم طويلاً.',
       durationMin: 90,
-      priceFrom: 450,
-      deposit: 30,
+      priceFrom: 2000,
+      deposit: 200,
       icon: 'anchor',
     },
     {
@@ -101,8 +101,8 @@ export const clinic = {
       name: 'ابتسامة هوليوود',
       description: 'قشور خزفية (فينير) لتصميم ابتسامة متناسقة وطبيعية.',
       durationMin: 60,
-      priceFrom: 150,
-      deposit: 30,
+      priceFrom: 700,
+      deposit: 150,
       icon: 'smile',
     },
   ],

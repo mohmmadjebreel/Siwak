@@ -6,15 +6,16 @@ import { openDb } from '../src/db.js';
 import { createPayments } from '../src/payments/index.js';
 import { expireHolds, sendReminders } from '../src/scheduler.js';
 import { addDays, minutesUntil, nowInZone } from '../src/time.js';
-import { normalizePhone, toMinorUnits } from '../src/util.js';
+import { isAllowedPhone, normalizePhone, toMinorUnits } from '../src/util.js';
 
 const config = {
   isProduction: false,
   port: 0,
   baseUrl: 'http://localhost',
-  timezone: 'Asia/Amman',
-  defaultCountryCode: '962',
-  currency: 'JOD',
+  timezone: 'Asia/Hebron',
+  defaultCountryCode: '970',
+  allowedPhonePrefixes: ['+97059', '+97056'],
+  currency: 'ILS',
   holdMinutes: 30,
   sessionSecret: 'test-secret',
   adminPassword: 'pa55word',
@@ -49,7 +50,7 @@ function lastSms(phone, kind) {
 }
 
 async function verifiedToken(localPhone) {
-  const phone = normalizePhone(localPhone, '962');
+  const phone = normalizePhone(localPhone, '970');
   const sent = await call('/api/otp/send', { method: 'POST', body: { phone: localPhone } });
   assert.equal(sent.status, 200, JSON.stringify(sent.json));
   const code = lastSms(phone, 'otp').body.match(/\d{6}/)[0];
@@ -85,13 +86,28 @@ after(() => {
 });
 
 describe('helpers', () => {
-  test('normalizePhone handles local, international and Arabic digits', () => {
-    assert.equal(normalizePhone('0791234567', '962'), '+962791234567');
-    assert.equal(normalizePhone('+962 79 123 4567', '962'), '+962791234567');
-    assert.equal(normalizePhone('00962791234567', '962'), '+962791234567');
-    assert.equal(normalizePhone('٠٧٩١٢٣٤٥٦٧', '962'), '+962791234567');
-    assert.equal(normalizePhone('12', '962'), null);
-    assert.equal(normalizePhone('abc', '962'), null);
+  test('normalizePhone handles Palestinian local, international and Arabic digits', () => {
+    assert.equal(normalizePhone('0597736062', '970'), '+970597736062');
+    assert.equal(normalizePhone('059 773 6062', '970'), '+970597736062');
+    assert.equal(normalizePhone('+970 59 773 6062', '970'), '+970597736062');
+    assert.equal(normalizePhone('00970567736062', '970'), '+970567736062');
+    assert.equal(normalizePhone('+972597736062', '970'), '+970597736062');
+    assert.equal(normalizePhone('972597736062', '970'), '+970597736062');
+    assert.equal(normalizePhone('٠٥٩٧٧٣٦٠٦٢', '970'), '+970597736062');
+    assert.equal(normalizePhone('12', '970'), null);
+    assert.equal(normalizePhone('abc', '970'), null);
+  });
+
+  test('only Palestinian mobiles (059 / 056) are allowed by default', () => {
+    const allowed = ['+97059', '+97056'];
+    const ok = (n) => isAllowedPhone(normalizePhone(n, '970'), allowed);
+    assert.ok(ok('0597736062'));
+    assert.ok(ok('0567736062'));
+    assert.ok(!ok('059773606')); // too short
+    assert.ok(!ok('05977360622')); // too long
+    assert.ok(!ok('0527736062')); // not a Palestinian network
+    assert.ok(!ok('+962791234567'));
+    assert.ok(isAllowedPhone('+962791234567', []));
   });
 
   test('three-decimal currencies are rounded to multiples of 10 minor units', () => {
@@ -135,25 +151,31 @@ describe('booking flow', () => {
   });
 
   test('wrong OTP is rejected and attempts are limited', async () => {
-    await call('/api/otp/send', { method: 'POST', body: { phone: '0780000001' } });
+    await call('/api/otp/send', { method: 'POST', body: { phone: '0560000001' } });
     for (let i = 0; i < 5; i++) {
-      const r = await call('/api/otp/verify', { method: 'POST', body: { phone: '0780000001', code: '000000' } });
+      const r = await call('/api/otp/verify', { method: 'POST', body: { phone: '0560000001', code: '000000' } });
       assert.ok([400].includes(r.status));
     }
-    const code = lastSms('+962780000001', 'otp').body.match(/\d{6}/)[0];
-    const locked = await call('/api/otp/verify', { method: 'POST', body: { phone: '0780000001', code } });
+    const code = lastSms('+970560000001', 'otp').body.match(/\d{6}/)[0];
+    const locked = await call('/api/otp/verify', { method: 'POST', body: { phone: '0560000001', code } });
     assert.equal(locked.status, 429);
   });
 
+  test('non-Palestinian numbers cannot request a code', async () => {
+    const res = await call('/api/otp/send', { method: 'POST', body: { phone: '0791234567' } });
+    assert.equal(res.status, 400);
+    assert.match(res.json.error, /059/);
+  });
+
   test('OTP resend is throttled', async () => {
-    await call('/api/otp/send', { method: 'POST', body: { phone: '0780000002' } });
-    const again = await call('/api/otp/send', { method: 'POST', body: { phone: '0780000002' } });
+    await call('/api/otp/send', { method: 'POST', body: { phone: '0560000002' } });
+    const again = await call('/api/otp/send', { method: 'POST', body: { phone: '0560000002' } });
     assert.equal(again.status, 429);
     assert.ok(again.json.retryAfter > 0);
   });
 
   test('full flow: hold slot → pay deposit → confirmed + SMS', async () => {
-    const token = await verifiedToken('0791234567');
+    const token = await verifiedToken('0597736062');
     const slot = await findSlot('filling', 'dr-1');
 
     const created = await call('/api/appointments', {
@@ -165,7 +187,7 @@ describe('booking flow', () => {
     assert.match(ref, /^SW-[A-Z0-9]{6}$/);
     assert.match(redirectUrl, /^\/pay\/mock\?ref=/);
     assert.equal(created.json.appointment.status, 'pending_payment');
-    assert.equal(created.json.appointment.deposit, 10);
+    assert.equal(created.json.appointment.deposit, 50);
 
     // The held slot disappears for that doctor.
     const after = await call(`/api/slots?serviceId=filling&doctorId=dr-1&date=${slot.date}`);
@@ -182,7 +204,7 @@ describe('booking flow', () => {
     assert.equal(confirmed.json.appointment.status, 'confirmed');
     assert.ok(confirmed.json.appointment.paidAt);
 
-    const sms = lastSms('+962791234567', 'confirmation');
+    const sms = lastSms('+970597736062', 'confirmation');
     assert.ok(sms, 'confirmation SMS sent');
     assert.ok(sms.body.includes(ref));
 
@@ -196,12 +218,12 @@ describe('booking flow', () => {
     const slot = await findSlot('checkup', 'dr-3');
     const first = await call('/api/appointments', {
       method: 'POST',
-      body: { serviceId: 'checkup', doctorId: 'dr-3', ...slot, name: 'Ali', agree: true, verifyToken: await verifiedToken('0771111111') },
+      body: { serviceId: 'checkup', doctorId: 'dr-3', ...slot, name: 'Ali', agree: true, verifyToken: await verifiedToken('0591111111') },
     });
     assert.equal(first.status, 201);
     const second = await call('/api/appointments', {
       method: 'POST',
-      body: { serviceId: 'checkup', doctorId: 'dr-3', ...slot, name: 'Badr', agree: true, verifyToken: await verifiedToken('0772222222') },
+      body: { serviceId: 'checkup', doctorId: 'dr-3', ...slot, name: 'Badr', agree: true, verifyToken: await verifiedToken('0592222222') },
     });
     assert.equal(second.status, 409);
   });
@@ -210,7 +232,7 @@ describe('booking flow', () => {
     const slot = await findSlot('orthodontics', 'dr-2');
     const created = await call('/api/appointments', {
       method: 'POST',
-      body: { serviceId: 'orthodontics', doctorId: 'dr-2', ...slot, name: 'Carla', agree: true, verifyToken: await verifiedToken('0773333333') },
+      body: { serviceId: 'orthodontics', doctorId: 'dr-2', ...slot, name: 'Carla', agree: true, verifyToken: await verifiedToken('0593333333') },
     });
     assert.equal(created.status, 201);
     db.prepare('UPDATE appointments SET hold_expires_at = ? WHERE ref = ?').run(Date.now() - 1000, created.json.ref);
@@ -238,13 +260,13 @@ describe('reminders', () => {
     db.prepare(
       `INSERT INTO appointments (ref, patient_name, phone, service_id, doctor_id, date, time, duration_min, status,
         deposit_amount, currency, paid_at, created_at, updated_at)
-       VALUES ('SW-REMIND', 'R', '+962790000009', 'checkup', 'dr-1', ?, ?, 30, 'confirmed', 5, 'JOD', ?, ?, ?)`,
+       VALUES ('SW-REMIND', 'R', '+970590000009', 'checkup', 'dr-1', ?, ?, 30, 'confirmed', 20, 'ILS', ?, ?, ?)`,
     ).run(date, time, ts, ts, ts);
 
     const sms = { sent: [], async send(to, body) { this.sent.push({ to, body }); return true; } };
     await sendReminders(db, config, sms);
     await sendReminders(db, config, sms);
-    assert.equal(sms.sent.filter((m) => m.to === '+962790000009').length, 1);
+    assert.equal(sms.sent.filter((m) => m.to === '+970590000009').length, 1);
   });
 });
 
@@ -262,7 +284,7 @@ describe('admin', () => {
     assert.equal(stats.status, 200);
 
     const list = await call('/api/admin/appointments?status=confirmed', { cookie });
-    const target = list.json.appointments.find((a) => a.phone === '+962791234567');
+    const target = list.json.appointments.find((a) => a.phone === '+970597736062');
     assert.ok(target);
 
     // Invalid transition.
@@ -272,6 +294,6 @@ describe('admin', () => {
     const cancelled = await call(`/api/admin/appointments/${target.ref}`, { method: 'PATCH', body: { status: 'cancelled' }, cookie });
     assert.equal(cancelled.status, 200);
     assert.equal(cancelled.json.appointment.status, 'cancelled');
-    assert.ok(lastSms('+962791234567', 'cancellation'));
+    assert.ok(lastSms('+970597736062', 'cancellation'));
   });
 });

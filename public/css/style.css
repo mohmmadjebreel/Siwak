@@ -1,16 +1,18 @@
 /* سواك — Siwak dental clinic */
 :root {
-  --bg: #fbf8f3;
+  --bg: #f5f8fc;
   --surface: #ffffff;
-  --ink: #14302a;
-  --muted: #5b6f69;
-  --line: #e7e1d6;
-  --brand: #0f5c4d;
-  --brand-700: #0b4a3e;
-  --brand-500: #1a7a65;
-  --brand-50: #e9f4f0;
-  --accent: #c39a5b;
-  --accent-50: #f7f0e3;
+  --ink: #0f2540;
+  --muted: #56677f;
+  --line: #dfe7f1;
+  --brand: #1a5fc0;
+  --brand-700: #134a98;
+  --brand-500: #3b82e0;
+  --brand-50: #eaf2fd;
+  --accent: #0ea5e9;
+  --accent-ink: #0369a1;
+  --navy: #0c2a55;
+  --accent-50: #e5f5fd;
   --ok: #067647;
   --ok-50: #ecfdf3;
   --warn: #b54708;
@@ -19,8 +21,8 @@
   --danger-50: #fef3f2;
   --radius: 18px;
   --radius-sm: 12px;
-  --shadow: 0 18px 40px -20px rgba(11, 74, 62, 0.35);
-  --shadow-sm: 0 4px 14px -6px rgba(11, 74, 62, 0.18);
+  --shadow: 0 18px 40px -20px rgba(19, 60, 130, 0.35);
+  --shadow-sm: 0 4px 14px -6px rgba(19, 60, 130, 0.18);
   --container: 1160px;
   font-family: 'Tajawal', system-ui, -apple-system, 'Segoe UI', sans-serif;
   color: var(--ink);
@@ -96,7 +98,7 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .hero-grid { display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 56px; align-items: center; }
 .eyebrow {
   display: inline-flex; align-items: center; gap: 8px; padding: 6px 14px; border-radius: 999px;
-  background: var(--accent-50); color: #8a6a35; font-weight: 700; font-size: 0.9rem; margin-bottom: 18px;
+  background: var(--accent-50); color: var(--accent-ink); font-weight: 700; font-size: 0.9rem; margin-bottom: 18px;
 }
 .hero h1 { font-size: clamp(2.2rem, 5vw, 3.6rem); letter-spacing: -0.5px; }
 .hero h1 em { font-style: normal; color: var(--brand); position: relative; }
@@ -142,7 +144,7 @@ button, input, select, textarea { font: inherit; color: inherit; }
   border-radius: 16px; padding: 12px 16px; box-shadow: var(--shadow); display: flex; gap: 10px; align-items: center;
   border: 1px solid var(--line); animation: float 6s ease-in-out infinite reverse;
 }
-.deposit-chip .ic { width: 36px; height: 36px; border-radius: 10px; background: var(--accent-50); color: #8a6a35; display: grid; place-items: center; }
+.deposit-chip .ic { width: 36px; height: 36px; border-radius: 10px; background: var(--accent-50); color: var(--accent-ink); display: grid; place-items: center; }
 .deposit-chip .ic svg { width: 18px; height: 18px; }
 .deposit-chip small { display: block; color: var(--muted); font-size: 0.78rem; }
 @keyframes float { 50% { transform: translateY(-8px); } }
@@ -161,7 +163,7 @@ section { scroll-margin-top: 80px; }
 .section { padding: 88px 0; }
 .section-alt { background: var(--surface); border-block: 1px solid var(--line); }
 .section-head { text-align: center; max-width: 640px; margin: 0 auto 48px; }
-.section-head .kicker { color: var(--accent); font-weight: 800; letter-spacing: 0.5px; font-size: 0.95rem; }
+.section-head .kicker { color: var(--accent-ink); font-weight: 800; letter-spacing: 0.5px; font-size: 0.95rem; }
 .section-head h2 { font-size: clamp(1.7rem, 3.5vw, 2.4rem); }
 .section-head p { color: var(--muted); }
 
@@ -179,7 +181,7 @@ section { scroll-margin-top: 80px; }
   display: flex; flex-direction: column; transition: 0.2s ease; text-decoration: none;
 }
 .service-card:hover { border-color: var(--brand-500); box-shadow: var(--shadow-sm); transform: translateY(-3px); }
-.service-card .ic { width: 48px; height: 48px; border-radius: 14px; background: var(--accent-50); color: #8a6a35; display: grid; place-items: center; margin-bottom: 14px; }
+.service-card .ic { width: 48px; height: 48px; border-radius: 14px; background: var(--accent-50); color: var(--accent-ink); display: grid; place-items: center; margin-bottom: 14px; }
 .service-card .ic svg { width: 24px; height: 24px; }
 .service-card h3 { font-size: 1.1rem; margin-bottom: 6px; }
 .service-card p { color: var(--muted); font-size: 0.93rem; flex: 1; }
@@ -216,7 +218,7 @@ section { scroll-margin-top: 80px; }
 .faq details p { color: var(--muted); }
 
 .cta-band {
-  background: linear-gradient(135deg, var(--brand) 0%, var(--brand-700) 100%); color: #fff;
+  background: linear-gradient(135deg, var(--brand-500) 0%, var(--brand-700) 100%); color: #fff;
   border-radius: 28px; padding: 48px; display: flex; align-items: center; justify-content: space-between; gap: 24px; flex-wrap: wrap;
   position: relative; overflow: hidden;
 }
@@ -247,7 +249,7 @@ section { scroll-margin-top: 80px; }
 }
 
 /* ---------- Footer ---------- */
-.site-footer { background: var(--brand-700); color: rgba(255,255,255,0.8); padding: 48px 0 24px; margin-top: 88px; }
+.site-footer { background: var(--navy); color: rgba(255,255,255,0.8); padding: 48px 0 24px; margin-top: 88px; }
 .footer-grid { display: flex; justify-content: space-between; gap: 32px; flex-wrap: wrap; }
 .site-footer .brand { color: #fff; }
 .site-footer .brand small { color: rgba(255,255,255,0.65); }
@@ -310,7 +312,7 @@ textarea.input { min-height: 90px; resize: vertical; }
 }
 .choice:hover { border-color: var(--brand-500); }
 .choice[aria-pressed='true'] { border-color: var(--brand); background: var(--brand-50); box-shadow: 0 0 0 3px var(--brand-50); }
-.choice .ic { width: 42px; height: 42px; border-radius: 12px; background: var(--accent-50); color: #8a6a35; display: grid; place-items: center; flex: none; }
+.choice .ic { width: 42px; height: 42px; border-radius: 12px; background: var(--accent-50); color: var(--accent-ink); display: grid; place-items: center; flex: none; }
 .choice .ic svg { width: 22px; height: 22px; }
 .choice b { display: block; }
 .choice small { color: var(--muted); display: block; line-height: 1.5; }
@@ -387,14 +389,14 @@ textarea.input { min-height: 90px; resize: vertical; }
 /* ---------- Mock pay ---------- */
 .pay-wrap { max-width: 460px; margin: 48px auto; }
 .card-visual {
-  background: linear-gradient(135deg, #1b2a27, #0f5c4d); color: #fff; border-radius: 18px; padding: 22px; margin-bottom: 20px;
+  background: linear-gradient(135deg, #0c2a55, #1a5fc0); color: #fff; border-radius: 18px; padding: 22px; margin-bottom: 20px;
   aspect-ratio: 1.6; display: flex; flex-direction: column; justify-content: space-between; direction: ltr;
 }
 .card-visual .num { font-size: 1.3rem; letter-spacing: 3px; }
 .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 
 /* ---------- Admin ---------- */
-.admin-body { background: #f4f2ee; }
+.admin-body { background: #eff4fa; }
 .admin-top { background: var(--surface); border-bottom: 1px solid var(--line); }
 .admin-top .nav { height: 64px; }
 .stats { display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px; margin: 24px 0; }
@@ -412,7 +414,7 @@ textarea.input { min-height: 90px; resize: vertical; }
 .table-wrap { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; overflow: hidden; }
 table { width: 100%; border-collapse: collapse; font-size: 0.93rem; }
 th, td { padding: 12px 14px; text-align: start; border-bottom: 1px solid var(--line); vertical-align: middle; }
-th { background: #faf8f4; color: var(--muted); font-weight: 700; font-size: 0.85rem; }
+th { background: #f6f9fd; color: var(--muted); font-weight: 700; font-size: 0.85rem; }
 tr:last-child td { border-bottom: 0; }
 td .sub { display: block; color: var(--muted); font-size: 0.82rem; }
 td.actions { white-space: nowrap; }
@@ -444,3 +446,6 @@ td [dir='ltr'] { unicode-bidi: isolate; }
 .logo-center { margin: 0 auto 16px; }
 .admin-body { min-height: 100vh; }
 .toolbar .input { height: 44px; }
+.label-ic { display: inline-block; width: 18px; height: 18px; vertical-align: -3px; color: var(--brand); }
+.label-ic svg { width: 18px; height: 18px; }
+.slot-group:first-child h4 { margin-top: 4px; }

@@ -5,12 +5,13 @@ import { otpMessage } from '../messages.js';
 import { bookingDates, doctorsForService, getAvailability } from '../slots.js';
 import { signToken, verifyToken } from '../security.js';
 import { isValidDate, isValidTime } from '../time.js';
-import { cleanText, generateOtp, maskPhone, normalizePhone, sha256 } from '../util.js';
+import { cleanText, generateOtp, isAllowedPhone, maskPhone, normalizePhone, sha256 } from '../util.js';
 
 const OTP_TTL_MS = 10 * 60_000;
 const OTP_RESEND_MS = 60_000;
 const OTP_MAX_PER_HOUR = 5;
 const OTP_MAX_ATTEMPTS = 5;
+const PHONE_ERROR = 'يرجى إدخال رقم جوال فلسطيني صحيح يبدأ بـ 059 أو 056 (مثال: 0597736062)';
 
 export function publicRoutes({ db, config, sms, allow, startCheckout, viewToken }) {
   const router = express.Router();
@@ -58,7 +59,7 @@ export function publicRoutes({ db, config, sms, allow, startCheckout, viewToken 
 
   router.post('/otp/send', async (req, res) => {
     const phone = normalizePhone(req.body?.phone, config.defaultCountryCode);
-    if (!phone) throw new BookingError('رقم الجوال غير صحيح');
+    if (!isAllowedPhone(phone, config.allowedPhonePrefixes)) throw new BookingError(PHONE_ERROR);
     if (!allow(`otp-ip:${req.ip}`, 10, 3_600_000)) throw new BookingError('محاولات كثيرة، حاول لاحقاً', 429);
 
     const now = Date.now();
@@ -88,7 +89,8 @@ export function publicRoutes({ db, config, sms, allow, startCheckout, viewToken 
   router.post('/otp/verify', (req, res) => {
     const phone = normalizePhone(req.body?.phone, config.defaultCountryCode);
     const code = String(req.body?.code || '').replace(/\D/g, '');
-    if (!phone || code.length !== 6) throw new BookingError('الرمز غير صحيح');
+    if (!isAllowedPhone(phone, config.allowedPhonePrefixes)) throw new BookingError(PHONE_ERROR);
+    if (code.length !== 6) throw new BookingError('الرمز غير صحيح');
 
     const row = db.prepare('SELECT * FROM otps WHERE phone = ?').get(phone);
     if (!row || row.expires_at < Date.now()) throw new BookingError('انتهت صلاحية الرمز، اطلب رمزاً جديداً');
