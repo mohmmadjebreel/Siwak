@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>احجز موعدك — سواك</title>
+  <meta name="description" content="احجز موعدك في عيادة سواك لطب الأسنان أونلاين.">
+  <meta name="theme-color" content="#0f5c4d">
+  <link rel="icon" href="/img/logo.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css">
+  <script type="module" src="/js/book.js"></script>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="container nav" aria-label="القائمة الرئيسية">
+      <a class="brand" href="/">
+        <img src="/img/logo.svg" alt="" width="40" height="40">
+        <span>سواك<small>لطب وتجميل الأسنان</small></span>
+      </a>
+      <a class="btn btn-ghost btn-sm" href="/"><span data-icon="arrowBack"></span> الرئيسية</a>
+    </nav>
+  </header>
+
+  <main class="container">
+    <div class="page-head">
+      <h1>احجز موعدك</h1>
+      <p class="muted">أربع خطوات بسيطة، ويصلك التأكيد برسالة على جوالك.</p>
+    </div>
+
+    <ol class="stepper" id="stepper">
+      <li data-n="1" data-step="1"><span>الخدمة</span></li>
+      <li data-n="2" data-step="2"><span>الموعد</span></li>
+      <li data-n="3" data-step="3"><span>بياناتك</span></li>
+      <li data-n="4" data-step="4"><span>الدفع</span></li>
+    </ol>
+
+    <div class="booking-layout">
+      <div>
+        <!-- Step 1: service -->
+        <section class="panel" data-panel="1">
+          <h2>ما الخدمة التي تحتاجها؟</h2>
+          <p class="muted">اختر خدمة واحدة. يمكنك مناقشة أي علاج إضافي مع الطبيب خلال الزيارة.</p>
+          <div class="choice-grid" id="service-list">
+            <div class="loading"><span class="spinner"></span> جارٍ التحميل…</div>
+          </div>
+        </section>
+
+        <!-- Step 2: doctor, date, time -->
+        <section class="panel hidden" data-panel="2">
+          <h2>اختر الطبيب والموعد</h2>
+          <div class="field">
+            <label>الطبيب</label>
+            <div class="chips" id="doctor-list"></div>
+          </div>
+          <div class="field">
+            <label>اليوم</label>
+            <div class="date-strip" id="date-list"></div>
+          </div>
+          <div id="slot-area"></div>
+          <div class="alert alert-error hidden" id="err-2" role="alert"></div>
+          <div class="step-actions">
+            <button class="btn btn-ghost" type="button" data-back="1"><span data-icon="arrowBack"></span> رجوع</button>
+            <button class="btn btn-primary" type="button" id="to-3" disabled>التالي <span data-icon="arrow"></span></button>
+          </div>
+        </section>
+
+        <!-- Step 3: patient details + phone verification -->
+        <section class="panel hidden" data-panel="3">
+          <h2>بياناتك</h2>
+          <div class="field">
+            <label for="name">الاسم الكامل</label>
+            <input class="input" id="name" autocomplete="name" maxlength="60" placeholder="مثال: محمد أحمد">
+          </div>
+
+          <div class="field">
+            <label for="phone">رقم الجوال</label>
+            <div class="otp-box">
+              <input class="input" id="phone" type="tel" inputmode="tel" autocomplete="tel" dir="ltr" placeholder="07X XXX XXXX">
+              <button class="btn btn-ghost" type="button" id="send-otp">أرسل رمز التحقق</button>
+            </div>
+            <span class="hint">سنرسل رمزاً من 6 أرقام للتأكد من رقمك، ثم نرسل تأكيد الحجز على نفس الرقم.</span>
+          </div>
+
+          <div class="field hidden" id="otp-field">
+            <label for="otp">رمز التحقق</label>
+            <div class="otp-box">
+              <input class="input otp-input" id="otp" inputmode="numeric" autocomplete="one-time-code" maxlength="6" dir="ltr" placeholder="••••••">
+              <button class="btn btn-primary" type="button" id="verify-otp">تحقق</button>
+            </div>
+            <span class="hint" id="otp-hint"></span>
+          </div>
+
+          <div class="field hidden" id="verified-field">
+            <span class="verified"><span data-icon="checkCircle"></span> تم التحقق من رقم الجوال <bdi id="verified-phone" dir="ltr"></bdi></span>
+          </div>
+
+          <div class="field">
+            <label for="notes">ملاحظات للطبيب <span class="muted">(اختياري)</span></label>
+            <textarea class="input" id="notes" maxlength="300" placeholder="مثلاً: ألم في الضرس السفلي الأيمن منذ أسبوع"></textarea>
+          </div>
+
+          <label class="check">
+            <input type="checkbox" id="agree">
+            <span>أوافق على دفع عربون يُخصم من قيمة الجلسة، ويُسترد عند الإلغاء قبل <b data-cancel-hours>24</b> ساعة من الموعد.</span>
+          </label>
+
+          <div class="alert alert-error hidden" id="err-3" role="alert"></div>
+          <div class="step-actions">
+            <button class="btn btn-ghost" type="button" data-back="2"><span data-icon="arrowBack"></span> رجوع</button>
+            <button class="btn btn-primary" type="button" id="submit" disabled><span data-icon="lock"></span> تأكيد والانتقال للدفع</button>
+          </div>
+        </section>
+
+        <!-- Step 4: redirecting to payment -->
+        <section class="panel hidden" data-panel="4">
+          <div class="loading"><span class="spinner"></span> جارٍ تحويلك إلى صفحة الدفع الآمنة…</div>
+        </section>
+      </div>
+
+      <aside class="panel summary" aria-live="polite">
+        <h3>ملخّص الحجز</h3>
+        <dl>
+          <div><dt>الخدمة</dt><dd id="s-service">—</dd></div>
+          <div><dt>الطبيب</dt><dd id="s-doctor">—</dd></div>
+          <div><dt>التاريخ</dt><dd id="s-date">—</dd></div>
+          <div><dt>الوقت</dt><dd id="s-time">—</dd></div>
+          <div><dt>المدة</dt><dd id="s-duration">—</dd></div>
+        </dl>
+        <div class="total"><span>العربون المطلوب الآن</span><b id="s-deposit">—</b></div>
+        <p class="note">يُخصم العربون من قيمة جلستك. نحجز الموعد لك لمدة <span id="s-hold">30</span> دقيقة لإتمام الدفع.</p>
+      </aside>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <div class="copyright">© <span data-year></span> عيادة سواك. جميع الحقوق محفوظة.</div>
+    </div>
+  </footer>
+</body>
+</html>

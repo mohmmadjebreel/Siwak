@@ -1,0 +1,19 @@
+{
+  "name": "siwak",
+  "version": "1.0.0",
+  "private": true,
+  "description": "سواك — موقع عيادة أسنان مع حجز مواعيد أونلاين، تأكيد عبر رسالة SMS، ودفع عربون",
+  "type": "module",
+  "main": "src/server.js",
+  "engines": {
+    "node": ">=22.13"
+  },
+  "scripts": {
+    "start": "node --disable-warning=ExperimentalWarning src/server.js",
+    "dev": "node --disable-warning=ExperimentalWarning --watch src/server.js",
+    "test": "node --disable-warning=ExperimentalWarning --test \"test/**/*.test.js\""
+  },
+  "dependencies": {
+    "express": "^5.1.0"
+  }
+}

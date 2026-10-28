@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>لوحة التحكم — سواك</title>
+  <meta name="robots" content="noindex, nofollow">
+  <link rel="icon" href="/img/logo.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css">
+  <script type="module" src="/js/admin.js"></script>
+</head>
+<body class="admin-body">
+  <!-- Login -->
+  <main class="container hidden" id="login-view">
+    <form class="panel login-box" id="login-form">
+      <div class="brand"><img src="/img/logo.svg" alt="" width="40" height="40"><span>سواك<small>لوحة تحكم العيادة</small></span></div>
+      <div class="field">
+        <label for="password">كلمة المرور</label>
+        <input class="input" id="password" type="password" autocomplete="current-password" required>
+      </div>
+      <div class="alert alert-error hidden" id="login-err" role="alert"></div>
+      <button class="btn btn-primary btn-block" type="submit">دخول</button>
+    </form>
+  </main>
+
+  <!-- Dashboard -->
+  <div class="hidden" id="dash-view">
+    <header class="admin-top">
+      <nav class="container nav">
+        <a class="brand" href="/admin"><img src="/img/logo.svg" alt="" width="36" height="36"><span>سواك<small>لوحة التحكم</small></span></a>
+        <div>
+          <a class="btn btn-ghost btn-sm" href="/" target="_blank" rel="noopener">عرض الموقع</a>
+          <button class="btn btn-ghost btn-sm" id="logout">خروج</button>
+        </div>
+      </nav>
+    </header>
+
+    <main class="container">
+      <div class="stats" id="stats"></div>
+
+      <div class="tabs" id="tabs">
+        <button class="chip" data-range="today" aria-pressed="true">اليوم</button>
+        <button class="chip" data-range="upcoming" aria-pressed="false">القادمة</button>
+        <button class="chip" data-range="all" aria-pressed="false">الكل</button>
+      </div>
+
+      <div class="toolbar">
+        <div class="field">
+          <label for="f-status" class="sr-only">الحالة</label>
+          <select class="input" id="f-status">
+            <option value="">كل الحالات</option>
+            <option value="confirmed">مؤكد</option>
+            <option value="pending_payment">بانتظار الدفع</option>
+            <option value="payment_conflict">دفع بحاجة لمراجعة</option>
+            <option value="completed">مكتمل</option>
+            <option value="no_show">لم يحضر</option>
+            <option value="cancelled">ملغى</option>
+            <option value="expired">منتهي الصلاحية</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="f-q" class="sr-only">بحث</label>
+          <input class="input" id="f-q" type="search" placeholder="بحث بالاسم أو الجوال أو رقم الحجز">
+        </div>
+        <button class="btn btn-ghost btn-sm" id="refresh">تحديث</button>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>الموعد</th>
+              <th>المريض</th>
+              <th>الخدمة والطبيب</th>
+              <th>العربون</th>
+              <th>الحالة</th>
+              <th>إجراءات</th>
+            </tr>
+          </thead>
+          <tbody id="rows"></tbody>
+        </table>
+      </div>
+    </main>
+  </div>
+</body>
+</html>
