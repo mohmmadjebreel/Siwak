@@ -271,7 +271,6 @@ else
     warn "Could not get an SSL certificate."
     if [ "$BEHIND_CF" = true ]; then
       warn "Set the Cloudflare record to 'DNS only' (grey cloud), re-run this script, then switch it back to 'Proxied'."
-      URL="https://$DOMAIN (via Cloudflare)"
     fi
   fi
 fi
