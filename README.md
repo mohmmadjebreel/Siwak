@@ -139,6 +139,16 @@ curl -fsSL https://raw.githubusercontent.com/mohmmadjebreel/Siwak/claude/sawak-d
 
 قبل ذلك أضف سجل DNS من نوع **A**: `siwak` ← عنوان IP للسيرفر.
 
+### إذا كان الدومين على Cloudflare
+
+1. في Cloudflare ← DNS ← Add record: النوع `A`، الاسم `siwak`، القيمة IP السيرفر.
+2. اجعل **Proxy status = DNS only** (الغيمة الرمادية) أول مرة، ثم شغّل السكربت ليحصل على شهادة SSL.
+3. بعدها يمكنك تحويل الغيمة إلى **Proxied** (برتقالية)، وفي SSL/TLS اختر **Full (strict)** وفعّل **Always Use HTTPS**.
+   لا تستخدم وضع **Flexible**.
+
+السكربت يتعرّف على Cloudflare تلقائياً: يأخذ عنوان الزائر الحقيقي من `CF-Connecting-IP` (من عناوين Cloudflare فقط)،
+ويترك تحويل http ← https لـ Cloudflare حتى لا تحدث حلقة تحويل.
+
 ## النشر (Production)
 
 أي استضافة تدعم Node.js مع قرص دائم لملف قاعدة البيانات (مثل Render, Railway, Fly.io, أو VPS):

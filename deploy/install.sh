@@ -144,6 +144,12 @@ else
   WEB=nginx
 fi
 
+# Cloudflare sends the visitor's IP in CF-Connecting-IP; trust it only from Cloudflare's own ranges
+# so per-IP rate limits apply to real visitors, not to Cloudflare edge servers.
+CF_IPS="$(curl -fsS -m 10 https://www.cloudflare.com/ips-v4 || true) $(curl -fsS -m 10 https://www.cloudflare.com/ips-v6 || true)"
+ACME_DIR=/var/www/siwak-acme
+mkdir -p "$ACME_DIR"
+
 log "Configuring $WEB for $DOMAIN"
 if [ "$WEB" = nginx ]; then
   if [ -d /etc/nginx/sites-available ]; then
@@ -151,21 +157,35 @@ if [ "$WEB" = nginx ]; then
   else
     CONF=/etc/nginx/conf.d/siwak.conf
   fi
+  CF_CONF=/etc/nginx/siwak-cloudflare.conf
+  {
+    echo "# Cloudflare ranges (refreshed by deploy/install.sh)"
+    for ip in $CF_IPS; do echo "set_real_ip_from $ip;"; done
+    [ -n "${CF_IPS// /}" ] && echo "real_ip_header CF-Connecting-IP;"
+  } > "$CF_CONF"
+  LISTEN6=""
+  [ -s /proc/net/if_inet6 ] && LISTEN6="listen [::]:80;"
   # Leave the file alone once certbot has added SSL to it.
   if [ ! -f "$CONF" ] || ! grep -q 'managed by Certbot' "$CONF"; then
     cat > "$CONF" <<EOF
 server {
     listen 80;
-    listen [::]:80;
+    $LISTEN6
     server_name $DOMAIN;
     client_max_body_size 1m;
+    include $CF_CONF;
+
+    location ^~ /.well-known/acme-challenge/ {
+        root $ACME_DIR;
+        default_type text/plain;
+    }
 
     location / {
         proxy_pass http://127.0.0.1:$PORT;
         proxy_http_version 1.1;
         proxy_set_header Host \$host;
         proxy_set_header X-Real-IP \$remote_addr;
-        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-For \$remote_addr;
         proxy_set_header X-Forwarded-Proto \$scheme;
     }
 }
@@ -175,13 +195,27 @@ EOF
   nginx -t
   systemctl reload nginx
 else
-  a2enmod -q proxy proxy_http headers >/dev/null
+  a2enmod -q proxy proxy_http headers remoteip alias >/dev/null
+  CF_CONF=/etc/apache2/siwak-cloudflare.conf
+  {
+    echo "# Cloudflare ranges (refreshed by deploy/install.sh)"
+    if [ -n "${CF_IPS// /}" ]; then
+      echo "RemoteIPHeader CF-Connecting-IP"
+      for ip in $CF_IPS; do echo "RemoteIPTrustedProxy $ip"; done
+    fi
+  } > "$CF_CONF"
   CONF=/etc/apache2/sites-available/siwak.conf
   if [ ! -f "$CONF" ]; then
     cat > "$CONF" <<EOF
 <VirtualHost *:80>
     ServerName $DOMAIN
+    Include $CF_CONF
+    Alias /.well-known/acme-challenge/ $ACME_DIR/.well-known/acme-challenge/
+    <Directory $ACME_DIR>
+        Require all granted
+    </Directory>
     ProxyPreserveHost On
+    ProxyPass /.well-known/acme-challenge/ !
     ProxyPass / http://127.0.0.1:$PORT/
     ProxyPassReverse / http://127.0.0.1:$PORT/
     RequestHeader set X-Forwarded-Proto "http"
@@ -194,20 +228,52 @@ EOF
 fi
 
 # ---- SSL ----
+is_cloudflare_ip() {
+  command -v python3 >/dev/null || return 1
+  python3 - "$1" $CF_IPS <<'PY'
+import ipaddress, sys
+ip = ipaddress.ip_address(sys.argv[1])
+sys.exit(0 if any(ip in ipaddress.ip_network(n) for n in sys.argv[2:]) else 1)
+PY
+}
+
 SERVER_IPS="$(hostname -I) $(curl -fsS -4 -m 5 https://api.ipify.org || true)"
 DOMAIN_IP="$(getent ahostsv4 "$DOMAIN" | awk 'NR==1{print $1}' || true)"
-if [ -n "$DOMAIN_IP" ] && grep -qw "$DOMAIN_IP" <<<"$SERVER_IPS"; then
-  log "Requesting SSL certificate"
+BEHIND_CF=false
+[ -n "$DOMAIN_IP" ] && [ -n "${CF_IPS// /}" ] && is_cloudflare_ip "$DOMAIN_IP" && BEHIND_CF=true
+
+URL="http://$DOMAIN"
+if [ -z "$DOMAIN_IP" ]; then
+  warn "$DOMAIN has no DNS record yet. Add an A record: $DOMAIN -> this server's IP, then re-run this script."
+elif [ "$BEHIND_CF" = false ] && ! grep -qw "$DOMAIN_IP" <<<"$SERVER_IPS"; then
+  warn "$DOMAIN points to $DOMAIN_IP, not to this server. Fix the DNS record, then re-run this script."
+else
+  log "Requesting SSL certificate$([ "$BEHIND_CF" = true ] && echo ' (domain is behind Cloudflare)')"
   apt-get install -y -qq certbot "python3-certbot-$WEB" >/dev/null
   EMAIL_ARGS=(--register-unsafely-without-email)
   [ -n "$CERT_EMAIL" ] && EMAIL_ARGS=(-m "$CERT_EMAIL")
-  certbot "--$WEB" -d "$DOMAIN" --non-interactive --agree-tos --redirect "${EMAIL_ARGS[@]}"
-  [ "$WEB" = apache ] && sed -i 's/X-Forwarded-Proto "http"/X-Forwarded-Proto "https"/' /etc/apache2/sites-available/siwak-le-ssl.conf 2>/dev/null && systemctl reload apache2 || true
-  URL="https://$DOMAIN"
-else
-  warn "$DOMAIN does not point to this server yet (resolves to: ${DOMAIN_IP:-nothing})."
-  warn "Add a DNS A record: $DOMAIN -> this server's IP, then re-run this script to get SSL."
-  URL="http://$DOMAIN"
+  # Behind Cloudflare the edge does the http->https redirect; redirecting at the origin too
+  # loops forever when Cloudflare's SSL mode is "Flexible".
+  REDIRECT=--redirect
+  [ "$BEHIND_CF" = true ] && REDIRECT=--no-redirect
+  # Webroot challenges keep renewals working whether or not Cloudflare redirects to https.
+  if certbot run -a webroot -w "$ACME_DIR" -i "$WEB" -d "$DOMAIN" --non-interactive --agree-tos \
+       "$REDIRECT" "${EMAIL_ARGS[@]}"; then
+    if [ "$WEB" = apache ] && [ -f /etc/apache2/sites-available/siwak-le-ssl.conf ]; then
+      sed -i 's/X-Forwarded-Proto "http"/X-Forwarded-Proto "https"/' /etc/apache2/sites-available/siwak-le-ssl.conf
+      systemctl reload apache2
+    fi
+    URL="https://$DOMAIN"
+    if [ "$BEHIND_CF" = true ]; then
+      warn "Cloudflare: set SSL/TLS mode to 'Full (strict)' and turn on 'Always Use HTTPS'."
+    fi
+  else
+    warn "Could not get an SSL certificate."
+    if [ "$BEHIND_CF" = true ]; then
+      warn "Set the Cloudflare record to 'DNS only' (grey cloud), re-run this script, then switch it back to 'Proxied'."
+      URL="https://$DOMAIN (via Cloudflare)"
+    fi
+  fi
 fi
 
 log "Done"
